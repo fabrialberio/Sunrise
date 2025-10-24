@@ -1,0 +1,126 @@
+const std = @import("std");
+
+const config = @import("config.zig");
+
+pub fn build(b: *std.Build) !void {
+    // --- compile blueprint files ---
+
+    const blueprint_dir_path = "src/ui";
+    const compile_blueprints = b.addSystemCommand(&.{ "blueprint-compiler", "batch-compile" });
+    const data_output = compile_blueprints.addOutputDirectoryArg("data");
+    compile_blueprints.addDirectoryArg(b.path(blueprint_dir_path));
+
+    // --- generate gresource.xml ---
+
+    var gresource_xml = std.array_list.Managed(u8).init(b.allocator);
+    defer gresource_xml.deinit();
+    try gresource_xml.appendSlice("<?xml version=\"1.0\" encoding=\"UTF-8\"?><gresources><gresource prefix=\"" ++ config.data_namespace ++ "\">");
+
+    var blueprint_dir = try std.fs.cwd().openDir(blueprint_dir_path, .{ .iterate = true });
+    defer blueprint_dir.close();
+    var blueprint_walker = try blueprint_dir.walk(b.allocator);
+    defer blueprint_walker.deinit();
+    while (try blueprint_walker.next()) |ui| {
+        if (!std.mem.eql(u8, ".blp", std.fs.path.extension(ui.path))) continue;
+        compile_blueprints.addFileArg(b.path(b.pathJoin(&.{ blueprint_dir_path, ui.path })));
+        try gresource_xml.appendSlice("<file preprocess=\"xml-stripblanks\">");
+        try gresource_xml.appendSlice(ui.path[0..(ui.path.len - 4)]);
+        try gresource_xml.appendSlice(".ui</file>");
+    }
+
+    try gresource_xml.appendSlice("</gresource></gresources>");
+
+    const wf = b.addWriteFiles();
+    const gresource_xml_file = wf.add(config.app_name ++ ".gresource.xml", gresource_xml.items);
+
+    // --- compile resources ---
+
+    const compile_resources = b.addSystemCommand(&.{"glib-compile-resources"});
+    compile_resources.addFileArg(gresource_xml_file);
+    compile_resources.addArg("--generate-source");
+    compile_resources.addPrefixedDirectoryArg("--sourcedir=", data_output);
+    const resource_file = compile_resources.addPrefixedOutputFileArg("--target=", "resources.c");
+    compile_resources.step.dependOn(&compile_blueprints.step);
+
+    // --- install translation files ---
+
+    var po_dir = try std.fs.cwd().openDir("po", .{ .iterate = true });
+    var po_walker = try po_dir.walk(b.allocator);
+    defer po_walker.deinit();
+    while (try po_walker.next()) |ui| {
+        const lang = std.fs.path.stem(ui.path);
+        if (!std.mem.eql(u8, ".po", std.fs.path.extension(ui.path)) or std.mem.eql(u8, lang, config.app_name)) continue;
+        const cmd = b.addSystemCommand(&.{"msgfmt"});
+        cmd.addFileArg(b.path(b.pathJoin(&.{ "po", ui.path })));
+        cmd.addArg("-o");
+        const out = cmd.addOutputFileArg(b.fmt("po/{s}.mo", .{lang}));
+        const mo_file = b.fmt("{s}/LC_MESSAGES/" ++ config.app_name ++ ".mo", .{lang});
+        const po_install = b.addInstallFileWithDir(out, .{ .custom = "share/locale" }, mo_file);
+        b.getInstallStep().dependOn(&po_install.step);
+    }
+
+    // --- install schemas ---
+
+    const schema_name = config.app_id ++ ".gschema.xml";
+    const schema_src = b.path("src/data/" ++ schema_name);
+    const schema_out = "share/glib-2.0/schemas";
+    const install_schemas = b.addInstallFileWithDir(schema_src, .{ .custom = schema_out }, schema_name);
+
+    // --- compile schemas ---
+
+    const compile_schemas = b.addSystemCommand(&.{"glib-compile-schemas"});
+    compile_schemas.addArg(b.fmt("{s}/" ++ schema_out, .{b.install_prefix}));
+    compile_schemas.step.dependOn(&install_schemas.step);
+    b.getInstallStep().dependOn(&compile_schemas.step);
+
+    // --- application ---
+
+    const target = b.standardTargetOptions(.{});
+    const optimize = b.standardOptimizeOption(.{});
+
+    const libintl = b.dependency("libintl", .{ .target = target, .optimize = optimize });
+    const gobject = b.dependency("gobject", .{ .target = target, .optimize = optimize });
+
+    const config_module = b.createModule(.{
+        .target = target,
+        .optimize = optimize,
+        .root_source_file = b.path("config.zig"),
+    });
+
+    const module = b.createModule(.{
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+        .root_source_file = b.path("src/main.zig"),
+        .imports = &.{
+            .{ .name = "adw", .module = gobject.module("adw1") },
+            .{ .name = "gio", .module = gobject.module("gio2") },
+            .{ .name = "glib", .module = gobject.module("glib2") },
+            .{ .name = "gobject", .module = gobject.module("gobject2") },
+            .{ .name = "gtk", .module = gobject.module("gtk4") },
+            .{ .name = "libintl", .module = libintl.module("libintl") },
+            .{ .name = "config", .module = config_module },
+        },
+    });
+
+    const exe = b.addExecutable(.{
+        .name = config.app_name,
+        .root_module = module,
+    });
+    exe.step.dependOn(&compile_resources.step);
+    exe.addCSourceFile(.{ .file = resource_file });
+    exe.linkSystemLibrary("libadwaita-1");
+
+    const install_exe = b.addInstallArtifact(exe, .{});
+    b.getInstallStep().dependOn(&install_exe.step);
+
+    // --- step for running the application ---
+
+    const run_cmd = b.addRunArtifact(exe);
+    run_cmd.step.dependOn(b.getInstallStep());
+    if (b.args) |args| {
+        run_cmd.addArgs(args);
+    }
+    const run_step = b.step("run", "Run the app");
+    run_step.dependOn(&run_cmd.step);
+}
