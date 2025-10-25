@@ -9,19 +9,7 @@ pub fn Common(comptime Self: type) type {
             return gobject.ext.as(T, self);
         }
 
-        pub fn virtualCall(self: *Self, comptime T: type, comptime func: []const u8, comptime args: anytype) void {
-            const virtual_func = @field(T.virtual_methods, func);
-            const parent_class = Self.Class.meta.parent_class.as(T.Class);
-            @call(.auto, virtual_func.call, .{ parent_class, self.as(T) } ++ args);
-        }
-
         pub const Class = extern struct {
-            pub const Instance = Self;
-
-            pub const meta = struct {
-                pub var parent_class: *Self.Parent.Class = undefined;
-            };
-
             pub fn as(class: *Self.Class, comptime T: type) *T {
                 return gobject.ext.as(T, class);
             }
@@ -44,13 +32,9 @@ pub fn Common(comptime Self: type) type {
                 }
             }
 
-            pub fn initMeta(class: *Self.Class) void {
-                meta.parent_class = @ptrCast(gobject.TypeClass.peekParent(@ptrCast(class)));
-            }
-
             pub fn override(class: *Self.Class, comptime T: type, comptime func: []const u8) void {
                 const virtual_func = @field(T.virtual_methods, func);
-                const override_func = @field(Instance, func);
+                const override_func = @field(Self, func);
                 @call(.auto, virtual_func.implement, .{ class, &override_func });
             }
 

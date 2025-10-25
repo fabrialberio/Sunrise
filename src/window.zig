@@ -26,7 +26,7 @@ pub const Window = extern struct {
         .flags = .{ .final = true },
         .instanceInit = &init,
         .classInit = &Class.init,
-        .parent_class = &Class.meta.parent_class,
+        .parent_class = &Class.parent,
     });
 
     pub fn init(self: *Self, _: *Class) callconv(.c) void {
@@ -46,27 +46,27 @@ pub const Window = extern struct {
 
     pub fn dispose(self: *Self) callconv(.c) void {
         self.as(gtk.Widget).disposeTemplate(getGObjectType());
-        self.virtualCall(gobject.Object, "dispose", .{});
+        gobject.Object.virtual_methods.dispose.call(
+            Class.parent,
+            self.as(Parent),
+        );
     }
 
     const Common = common.Common(Self);
     pub const as = Common.as;
-    pub const virtualCall = Common.virtualCall;
 
     pub const Class = extern struct {
         parent_class: Parent.Class,
+        var parent: *Parent.Class = undefined;
+        pub const Instance = Self;
 
         fn init(class: *Class) callconv(.c) void {
-            class.initMeta();
             class.override(gobject.Object, "dispose");
             class.bindTemplate("window.ui");
         }
 
-        pub const Instance = Common.Class.Instance;
-        pub const meta = Common.Class.meta;
         pub const as = Common.Class.as;
         pub const bindTemplate = Common.Class.bindTemplate;
-        pub const initMeta = Common.Class.initMeta;
         pub const override = Common.Class.override;
     };
 };

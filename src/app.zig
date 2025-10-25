@@ -40,7 +40,7 @@ pub const Application = extern struct {
         .flags = .{ .final = true },
         .instanceInit = &init,
         .classInit = &Class.init,
-        .parent_class = &Class.meta.parent_class,
+        .parent_class = &Class.parent,
     });
 
     pub fn init(self: *Self, _: *Class) callconv(.c) void {
@@ -70,15 +70,26 @@ pub const Application = extern struct {
 
         self.setAccel("app.quit", "<primary>Q");
 
-        self.virtualCall(gio.Application, "startup", .{});
+        gio.Application.virtual_methods.startup.call(
+            Class.parent,
+            self.as(Parent),
+        );
     }
 
     pub fn dispose(self: *Self) callconv(.c) void {
         self.private.settings.unref();
-        self.virtualCall(gobject.Object, "dispose", .{});
+
+        gobject.Object.virtual_methods.dispose.call(
+            Class.parent,
+            self.as(Parent),
+        );
     }
 
-    pub fn addSimpleAction(self: *Self, comptime name: [*:0]const u8, callback: *const fn (*gio.SimpleAction, ?*glib.Variant, *Self) callconv(.c) void) void {
+    pub fn addSimpleAction(
+        self: *Self,
+        comptime name: [*:0]const u8,
+        callback: *const fn (*gio.SimpleAction, ?*glib.Variant, *Self) callconv(.c) void,
+    ) void {
         const action = gio.SimpleAction.new(name, null);
         defer action.unref();
         _ = gio.SimpleAction.signals.activate.connect(action, *Self, callback, self, .{});
@@ -137,24 +148,21 @@ pub const Application = extern struct {
 
     const Common = common.Common(Self);
     pub const as = Common.as;
-    pub const virtualCall = Common.virtualCall;
 
     pub const Class = extern struct {
         parent_class: Parent.Class,
+        var parent: *Parent.Class = undefined;
+        pub const Instance = Self;
 
         fn init(class: *Class) callconv(.c) void {
-            class.initMeta();
             class.registerProperties();
             class.override(gio.Application, "activate");
             class.override(gio.Application, "startup");
             class.override(gobject.Object, "dispose");
         }
 
-        pub const Instance = Common.Class.Instance;
-        pub const meta = Common.Class.meta;
         pub const as = Common.Class.as;
         pub const bindTemplate = Common.Class.bindTemplate;
-        pub const initMeta = Common.Class.initMeta;
         pub const override = Common.Class.override;
         pub const registerProperties = Common.Class.registerProperties;
         pub const getPropertyArray = Common.Class.getPropertyArray;
