@@ -13,10 +13,6 @@ pub const Window = extern struct {
 
     pub const Parent = adw.ApplicationWindow;
 
-    const Common = util.Common(Self);
-    pub const as = Common.as;
-    pub const virtualCall = Common.virtualCall;
-
     parent: Parent,
     private: Private,
 
@@ -53,21 +49,24 @@ pub const Window = extern struct {
         self.virtualCall(gobject.Object, "dispose", .{});
     }
 
+    const Commmon = util.Common(Self);
+    pub const as = Commmon.as;
+    pub const virtualCall = Commmon.virtualCall;
+
     pub const Class = extern struct {
         parent_class: Parent.Class,
-
-        const CommonClass = util.CommonClass(Class, Self);
-        pub const Instance = CommonClass.Instance;
-        pub const meta = CommonClass.meta;
-        pub const as = CommonClass.as;
-        pub const bindTemplate = CommonClass.bindTemplate;
-        pub const initMeta = CommonClass.initMeta;
-        pub const override = CommonClass.override;
 
         fn init(class: *Class) callconv(.c) void {
             class.initMeta();
             class.override(gobject.Object, "dispose");
             class.bindTemplate("window.ui");
         }
+
+        pub const Instance = C.Class.Instance;
+        pub const meta = C.Class.meta;
+        pub const as = C.Class.as;
+        pub const bindTemplate = C.Class.bindTemplate;
+        pub const initMeta = C.Class.initMeta;
+        pub const override = C.Class.override;
     };
 };

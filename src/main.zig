@@ -12,8 +12,6 @@ pub fn main() !u8 {
     const schema_dir = util.getRelativeExeDir("share/glib-2.0/schemas", &schema_buf);
     _ = glib.setenv("GSETTINGS_SCHEMA_DIR", schema_dir, 1);
 
-    std.debug.print(adw.VERSION_S, .{});
-
     try util.setupLocale();
     adw.init();
     var app = Application.new().as(gio.Application);

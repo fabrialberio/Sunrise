@@ -14,10 +14,6 @@ pub const PreferencesDialog = extern struct {
 
     pub const Parent = adw.PreferencesDialog;
 
-    const Common = util.Common(Self);
-    pub const as = Common.as;
-    pub const virtualCall = Common.virtualCall;
-
     parent: Parent,
     private: Private,
 
@@ -52,21 +48,24 @@ pub const PreferencesDialog = extern struct {
         self.virtualCall(gobject.Object, "dispose", .{});
     }
 
+    const Common = util.Common(Self);
+    pub const as = Common.as;
+    pub const virtualCall = Common.virtualCall;
+
     pub const Class = extern struct {
         parent_class: Parent.Class,
-
-        const CommonClass = util.CommonClass(Class, Self);
-        pub const Instance = CommonClass.Instance;
-        pub const meta = CommonClass.meta;
-        pub const as = CommonClass.as;
-        pub const bindTemplate = CommonClass.bindTemplate;
-        pub const initMeta = CommonClass.initMeta;
-        pub const override = CommonClass.override;
 
         fn init(class: *Class) callconv(.c) void {
             class.initMeta();
             class.override(gobject.Object, "dispose");
             class.bindTemplate("prefs.ui");
         }
+
+        pub const Instance = Common.Class.Instance;
+        pub const meta = Common.Class.meta;
+        pub const as = Common.Class.as;
+        pub const bindTemplate = Common.Class.bindTemplate;
+        pub const initMeta = Common.Class.initMeta;
+        pub const override = Common.Class.override;
     };
 };
