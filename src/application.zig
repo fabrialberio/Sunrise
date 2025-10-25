@@ -156,14 +156,13 @@ pub const Application = extern struct {
 
         fn init(class: *Class) callconv(.c) void {
             class.registerProperties();
-            class.override(gio.Application, "activate");
-            class.override(gio.Application, "startup");
-            class.override(gobject.Object, "dispose");
+            gio.Application.virtual_methods.activate.implement(class, &activate);
+            gio.Application.virtual_methods.startup.implement(class, &startup);
+            gobject.Object.virtual_methods.dispose.implement(class, &dispose);
         }
 
         pub const as = Common.Class.as;
         pub const bindTemplate = Common.Class.bindTemplate;
-        pub const override = Common.Class.override;
         pub const registerProperties = Common.Class.registerProperties;
         pub const getPropertyArray = Common.Class.getPropertyArray;
     };

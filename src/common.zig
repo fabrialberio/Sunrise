@@ -32,12 +32,6 @@ pub fn Common(comptime Self: type) type {
                 }
             }
 
-            pub fn override(class: *Self.Class, comptime T: type, comptime func: []const u8) void {
-                const virtual_func = @field(T.virtual_methods, func);
-                const override_func = @field(Self, func);
-                @call(.auto, virtual_func.implement, .{ class, &override_func });
-            }
-
             pub fn registerProperties(class: *Self.Class) void {
                 if (!@hasDecl(Self, "properties"))
                     return;

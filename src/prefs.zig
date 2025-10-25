@@ -62,12 +62,11 @@ pub const PreferencesDialog = extern struct {
         pub const Instance = Self;
 
         fn init(class: *Class) callconv(.c) void {
-            class.override(gobject.Object, "dispose");
+            gobject.Object.virtual_methods.dispose.implement(class, &dispose);
             class.bindTemplate("prefs.ui");
         }
 
         pub const as = Common.Class.as;
         pub const bindTemplate = Common.Class.bindTemplate;
-        pub const override = Common.Class.override;
     };
 };
