@@ -5,7 +5,7 @@ const glib = @import("glib");
 const gobject = @import("gobject");
 const util = @import("util.zig");
 
-const Application = @import("app.zig").Application;
+const Application = @import("application.zig").Application;
 
 pub fn main() !u8 {
     var schema_buf: [std.fs.max_path_bytes]u8 = undefined;

@@ -6,7 +6,7 @@ const gtk = @import("gtk");
 const config = @import("config");
 const common = @import("common.zig");
 
-const Application = @import("app.zig").Application;
+const Application = @import("application.zig").Application;
 
 pub const Window = extern struct {
     const Self = @This();
