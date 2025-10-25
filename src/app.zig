@@ -6,6 +6,7 @@ const gobject = @import("gobject");
 const gtk = @import("gtk");
 const config = @import("config");
 const util = @import("util.zig");
+const common = @import("common.zig");
 
 const PreferencesDialog = @import("prefs.zig").PreferencesDialog;
 const Window = @import("window.zig").Window;
@@ -134,7 +135,7 @@ pub const Application = extern struct {
         });
     }
 
-    const Common = util.Common(Self);
+    const Common = common.Common(Self);
     pub const as = Common.as;
     pub const virtualCall = Common.virtualCall;
 

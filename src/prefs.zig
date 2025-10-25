@@ -5,6 +5,7 @@ const gio = @import("gio");
 const gobject = @import("gobject");
 const gtk = @import("gtk");
 const config = @import("config");
+const common = @import("common.zig");
 const util = @import("util.zig");
 
 const Window = @import("window.zig").Window;
@@ -48,7 +49,7 @@ pub const PreferencesDialog = extern struct {
         self.virtualCall(gobject.Object, "dispose", .{});
     }
 
-    const Common = util.Common(Self);
+    const Common = common.Common(Self);
     pub const as = Common.as;
     pub const virtualCall = Common.virtualCall;
 
