@@ -22,10 +22,8 @@ pub const Window = extern struct {
 
     const Private = extern struct {
         children: extern struct {
-            button: *gtk.Button,
-            label: *gtk.Label,
+            new_background_button: *adw.ButtonRow,
         },
-        counter: usize = 0,
     };
 
     pub const getGObjectType = gobject.ext.defineClass(Self, .{
@@ -38,9 +36,6 @@ pub const Window = extern struct {
     pub fn init(self: *Self, _: *Class) callconv(.c) void {
         var self_widget = self.as(gtk.Widget);
         self_widget.initTemplate();
-
-        const button = self.private.children.button;
-        _ = gtk.Button.signals.clicked.connect(button, *Self, &handleButtonClick, self, .{});
 
         if (builtin.mode == .Debug) {
             self_widget.addCssClass("devel");
@@ -56,13 +51,6 @@ pub const Window = extern struct {
     pub fn dispose(self: *Self) callconv(.c) void {
         self.as(gtk.Widget).disposeTemplate(getGObjectType());
         self.virtualCall(gobject.Object, "dispose", .{});
-    }
-
-    fn handleButtonClick(_: *gtk.Button, self: *Self) callconv(.c) void {
-        var buf: [64]u8 = undefined;
-        self.private.counter += 1;
-        const label = std.fmt.bufPrintZ(&buf, "Counter: {}", .{self.private.counter}) catch unreachable;
-        self.private.children.label.setLabel(label);
     }
 
     pub const Class = extern struct {

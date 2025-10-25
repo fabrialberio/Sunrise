@@ -2,9 +2,9 @@ using Gtk 4.0;
 using Adw 1;
 
 template $Window: Adw.ApplicationWindow {
-  title: _("sunrise");
-  default-width: 1280;
-  default-height: 720;
+  title: _("Sunrise");
+  default-width: 720;
+  default-height: 480;
 
   content: Adw.ToolbarView {
     [top]
@@ -17,19 +17,42 @@ template $Window: Adw.ApplicationWindow {
       }
     }
 
-    content: Gtk.Box {
-      orientation: vertical;
-      halign: center;
-      valign: center;
-      spacing: 16;
+    content: Adw.Clamp {
+      child: Gtk.Box {
+        orientation: vertical;
+        margin-start: 6;
+        margin-end: 6;
+        margin-bottom: 6;
 
-      Gtk.Label label {
-        label: "Hello, World!";
-      }
+        Adw.PreferencesGroup {
+          title: _("Your backgrounds");
 
-      Gtk.Button button {
-        label: "Click me!";
-      }
+          Adw.StatusPage your_backgrounds_placeholder {
+            icon-name: "dialog-error-symbolic";
+            title: _("No custom backgrounds.");
+
+            styles [
+              "compact",
+            ]
+          }
+        }
+
+        Adw.PreferencesGroup {
+          Adw.ButtonRow new_background_button {
+            title: _("New background");
+            start-icon-name: "list-add-symbolic";
+
+            styles [
+              "suggested-action",
+            ]
+          }
+        }
+
+        Adw.PreferencesGroup {
+          title: _("System backgrounds");
+          margin-top: 12;
+        }
+      };
     };
   };
 }
